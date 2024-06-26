@@ -40,7 +40,7 @@ ParkingFinder is a mobile application that helps users find available parking sp
 2. Install the dependencies:
   ```
   npm install
-  ``
+  ```
 3. Start the backend server:
   ```
   node server.js
