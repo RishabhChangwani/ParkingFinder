@@ -33,29 +33,29 @@ ParkingFinder is a mobile application that helps users find available parking sp
 ### Backend Setup
 
 1. Clone the backend repository and navigate to the project directory:
-   ```sh
+   ```
    git clone <backend-repo-url>
    cd backend-repo
-   ```sh
+   ```
 2. Install the dependencies:
-  ```sh
+  ```
   npm install
-  ```sh
+  ``
 3. Start the backend server:
-  ```sh
+  ```
   node server.js
-  ```sh
+  ```
 
 ### iOS App Setup
 
 1. Clone the repository and navigate to the project directory:
-  ```sh
+  ```
   git clone https://github.com/RishabhChangwani/ParkingFinder.git
   cd ParkingFinder
-  ```sh
+  ```
 2. Open the ParkingFinder.xcodeproj in Xcode:
-  ```sh
+  ```
   open ParkingFinder.xcodeproj
-  ```sh
+  ```
 3. Build and run the app on a simulator or a physical device.
 
