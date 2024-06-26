@@ -39,8 +39,9 @@ ParkingFinder is a mobile application that helps users find available parking sp
 2. Install the dependencies:
   ```sh
   npm install
+
 3. Start the backend server:
-  ```
+  ```sh
   node server.js
 
 ### iOS App Setup
@@ -49,6 +50,7 @@ ParkingFinder is a mobile application that helps users find available parking sp
   ```sh
   git clone https://github.com/RishabhChangwani/ParkingFinder.git
   cd ParkingFinder
+
 2. Open the ParkingFinder.xcodeproj in Xcode:
   ```sh
   open ParkingFinder.xcodeproj
