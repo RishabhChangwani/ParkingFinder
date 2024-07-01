@@ -7,6 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5AC45E0B2C3365140000BEE8 /* ParkingSpot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC45E0A2C3365140000BEE8 /* ParkingSpot.swift */; };
+		5AC45E0D2C3365270000BEE8 /* LocationManagerDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC45E0C2C3365270000BEE8 /* LocationManagerDelegate.swift */; };
+		5AC45E0F2C3365400000BEE8 /* MapViewDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC45E0E2C3365400000BEE8 /* MapViewDelegate.swift */; };
+		5AC45E112C3365840000BEE8 /* SearchBarDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC45E102C3365840000BEE8 /* SearchBarDelegate.swift */; };
+		5AC45E132C3365A20000BEE8 /* TableViewDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AC45E122C3365A20000BEE8 /* TableViewDelegate.swift */; };
 		5AD6406D2C2CA3A10063F25E /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AD6406C2C2CA3A10063F25E /* AppDelegate.swift */; };
 		5AD6406F2C2CA4210063F25E /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AD6406E2C2CA4210063F25E /* SceneDelegate.swift */; };
 		5AD8B89C2C29FB1D00AC508A /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AD8B89B2C29FB1D00AC508A /* ViewController.swift */; };
@@ -36,6 +41,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5AC45E0A2C3365140000BEE8 /* ParkingSpot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParkingSpot.swift; sourceTree = "<group>"; };
+		5AC45E0C2C3365270000BEE8 /* LocationManagerDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManagerDelegate.swift; sourceTree = "<group>"; };
+		5AC45E0E2C3365400000BEE8 /* MapViewDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MapViewDelegate.swift; sourceTree = "<group>"; };
+		5AC45E102C3365840000BEE8 /* SearchBarDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchBarDelegate.swift; sourceTree = "<group>"; };
+		5AC45E122C3365A20000BEE8 /* TableViewDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TableViewDelegate.swift; sourceTree = "<group>"; };
 		5AD6406C2C2CA3A10063F25E /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		5AD6406E2C2CA4210063F25E /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		5AD8B8942C29FB1D00AC508A /* ParkingFinder.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ParkingFinder.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -100,6 +110,11 @@
 			isa = PBXGroup;
 			children = (
 				5AD8B89B2C29FB1D00AC508A /* ViewController.swift */,
+				5AC45E0A2C3365140000BEE8 /* ParkingSpot.swift */,
+				5AC45E0C2C3365270000BEE8 /* LocationManagerDelegate.swift */,
+				5AC45E102C3365840000BEE8 /* SearchBarDelegate.swift */,
+				5AC45E122C3365A20000BEE8 /* TableViewDelegate.swift */,
+				5AC45E0E2C3365400000BEE8 /* MapViewDelegate.swift */,
 				5AD6406C2C2CA3A10063F25E /* AppDelegate.swift */,
 				5AD8B89D2C29FB1D00AC508A /* Main.storyboard */,
 				5AD6406E2C2CA4210063F25E /* SceneDelegate.swift */,
@@ -258,8 +273,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5AC45E132C3365A20000BEE8 /* TableViewDelegate.swift in Sources */,
+				5AC45E0F2C3365400000BEE8 /* MapViewDelegate.swift in Sources */,
 				5AD6406D2C2CA3A10063F25E /* AppDelegate.swift in Sources */,
+				5AC45E0D2C3365270000BEE8 /* LocationManagerDelegate.swift in Sources */,
 				5AD8B89C2C29FB1D00AC508A /* ViewController.swift in Sources */,
+				5AC45E0B2C3365140000BEE8 /* ParkingSpot.swift in Sources */,
+				5AC45E112C3365840000BEE8 /* SearchBarDelegate.swift in Sources */,
 				5AD6406F2C2CA4210063F25E /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

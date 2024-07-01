@@ -3,15 +3,7 @@ import CoreLocation
 import MapKit
 import CoreLocationUI
 
-struct ParkingSpot: Codable {
-    let latitude: Double
-    let longitude: Double
-    let name: String
-    let isAvailable: Bool
-    var distanceFromCurrentLocation: Double? // Update to var to modify
-}
-
-class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, UISearchBarDelegate, UITableViewDelegate, UITableViewDataSource, MKLocalSearchCompleterDelegate {
+class ViewController: UIViewController {
     @IBOutlet weak var mapView: MKMapView!
     @IBOutlet weak var locationButtonPlaceholder: UIView!
     @IBOutlet weak var activityIndicator: UIActivityIndicatorView!
@@ -24,11 +16,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     var directionsButton: UIButton!
     var closeButton: UIButton!
     var shareButton: UIButton!
+    var filterSegmentedControl: UISegmentedControl!
+    var distanceSlider: UISlider!
 
     let locationManager = CLLocationManager()
     var shouldUpdateMapRegion = true
     var userLocation: CLLocation?
     var parkingSpots: [ParkingSpot] = []
+    var filteredParkingSpots: [ParkingSpot] = []
     var searchCompleter = MKLocalSearchCompleter()
     var searchResults = [MKLocalSearchCompletion]()
     var selectedParkingSpot: MKAnnotation?
@@ -68,6 +63,9 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
 
         // Add Parking Spot Detail View
         setupParkingSpotDetailView()
+
+        // Add Segmented Control and Slider
+        setupFilters()
 
         // Fetch parking spots from backend
         fetchParkingSpots()
@@ -173,6 +171,36 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         ])
     }
 
+    func setupFilters() {
+        // Set up Segmented Control
+        filterSegmentedControl = UISegmentedControl(items: ["All", "Available", "Not Available"])
+        filterSegmentedControl.selectedSegmentIndex = 0
+        filterSegmentedControl.addTarget(self, action: #selector(filterSegmentedControlChanged), for: .valueChanged)
+        view.addSubview(filterSegmentedControl)
+        filterSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+
+        // Set up Slider
+        distanceSlider = UISlider()
+        distanceSlider.minimumValue = 0
+        distanceSlider.maximumValue = 10
+        distanceSlider.value = 10
+        distanceSlider.addTarget(self, action: #selector(distanceSliderChanged), for: .valueChanged)
+        view.addSubview(distanceSlider)
+        distanceSlider.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            filterSegmentedControl.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
+            filterSegmentedControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+            filterSegmentedControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+            filterSegmentedControl.heightAnchor.constraint(equalToConstant: 30),
+
+            distanceSlider.topAnchor.constraint(equalTo: filterSegmentedControl.bottomAnchor, constant: 10),
+            distanceSlider.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
+            distanceSlider.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
+            distanceSlider.heightAnchor.constraint(equalToConstant: 30)
+        ])
+    }
+
     @objc func locationButtonPressed() {
         if let location = userLocation {
             let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
@@ -188,10 +216,10 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
 
     @objc func closeDetailView() {
-        parkingSpotDetailView.isHidden = true
         if isShowingDirections {
             exitDirections()
         } else {
+            parkingSpotDetailView.isHidden = true
             mapView.deselectAnnotation(selectedParkingSpot, animated: true)
             selectedParkingSpot = nil
         }
@@ -211,82 +239,6 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             }
         }
         isShowingDirections = false
-    }
-
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        if let location = locations.first {
-            userLocation = location
-
-            if shouldUpdateMapRegion {
-                let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-                mapView.setRegion(region, animated: true)
-                mapView.showsUserLocation = true
-                shouldUpdateMapRegion = false
-            }
-
-            // Update distances for parking spots
-            updateParkingSpotDistances()
-        }
-    }
-
-    func updateParkingSpotDistances() {
-        guard let userLocation = userLocation else { return }
-
-        for i in 0..<parkingSpots.count {
-            let spotLocation = CLLocation(latitude: parkingSpots[i].latitude, longitude: parkingSpots[i].longitude)
-            let distanceInMeters = userLocation.distance(from: spotLocation)
-            let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
-            parkingSpots[i].distanceFromCurrentLocation = distanceInMiles
-        }
-    }
-
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        print("Failed to find user's location: \(error.localizedDescription)")
-    }
-
-    func addParkingSpots(_ parkingSpots: [ParkingSpot]) {
-        for spot in parkingSpots {
-            let annotation = MKPointAnnotation()
-            annotation.coordinate = CLLocationCoordinate2D(latitude: spot.latitude, longitude: spot.longitude)
-            annotation.title = spot.name
-            annotation.subtitle = spot.isAvailable ? "Available" : "Not Available"
-            mapView.addAnnotation(annotation)
-        }
-    }
-
-    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
-        if annotation is MKUserLocation {
-            return nil
-        }
-
-        let identifier = "ParkingSpot"
-        var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
-
-        if annotationView == nil {
-            annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
-            annotationView?.canShowCallout = false
-
-            annotationView?.glyphImage = UIImage(named: "parking_icon")
-            
-            annotationView?.markerTintColor = (annotation.subtitle == "Available") ? .green : .red
-        } else {
-            annotationView?.annotation = annotation
-        }
-
-        return annotationView
-    }
-
-    func mapView(_ mapView: MKMapView, didSelect view: MKAnnotationView) {
-        guard let annotation = view.annotation else { return }
-
-        selectedParkingSpot = annotation
-        showParkingSpotDetail(for: annotation)
-    }
-
-    func mapView(_ mapView: MKMapView, didDeselect view: MKAnnotationView) {
-        parkingSpotDetailView.isHidden = true
-        selectedParkingSpot = nil
-        exitDirections()
     }
 
     func showParkingSpotDetail(for annotation: MKAnnotation) {
@@ -367,133 +319,52 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         }.resume()
     }
 
+    func updateParkingSpotDistances() {
+        guard let userLocation = userLocation else { return }
+
+        for i in 0..<parkingSpots.count {
+            let spotLocation = CLLocation(latitude: parkingSpots[i].latitude, longitude: parkingSpots[i].longitude)
+            let distanceInMeters = userLocation.distance(from: spotLocation)
+            let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
+            parkingSpots[i].distanceFromCurrentLocation = distanceInMiles
+        }
+    }
+
     func showAlert(title: String, message: String) {
         let alert = UIAlertController(title: title, message: message, preferredStyle: .alert)
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
     }
 
-    // UISearchBarDelegate methods
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-        if searchText.isEmpty {
-            tableView.isHidden = true
-            addParkingSpots(parkingSpots)
-        } else {
-            tableView.isHidden = false
-            searchCompleter.queryFragment = searchText
-        }
+    @objc func filterSegmentedControlChanged() {
+        filterParkingSpots()
     }
 
-    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-        searchBar.resignFirstResponder()
-        tableView.isHidden = true
+    @objc func distanceSliderChanged() {
+        filterParkingSpots()
     }
 
-    // MKLocalSearchCompleterDelegate methods
-    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
-        searchResults = completer.results
-        tableView.reloadData()
-    }
+    func filterParkingSpots() {
+        let selectedSegmentIndex = filterSegmentedControl.selectedSegmentIndex
+        let maxDistance = Double(distanceSlider.value)
 
-    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {
-        print("Error finding completion: \(error.localizedDescription)")
-    }
+        filteredParkingSpots = parkingSpots.filter { spot in
+            var matchesAvailability = true
+            var matchesDistance = true
 
-    // UITableViewDataSource methods
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return searchResults.count
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        let searchResult = searchResults[indexPath.row]
-        cell.textLabel?.text = searchResult.title
-        cell.detailTextLabel?.text = searchResult.subtitle
-        return cell
-    }
-
-    // UITableViewDelegate methods
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        tableView.deselectRow(at: indexPath, animated: true)
-        let searchResult = searchResults[indexPath.row]
-        searchBar.text = searchResult.title
-        tableView.isHidden = true
-        performSearch(for: searchResult)
-    }
-
-    func performSearch(for completion: MKLocalSearchCompletion) {
-        let searchRequest = MKLocalSearch.Request(completion: completion)
-        let search = MKLocalSearch(request: searchRequest)
-        search.start { [weak self] (response, error) in
-            guard let self = self else { return }
-
-            if let error = error {
-                print("Error performing search: \(error.localizedDescription)")
-                self.showAlert(title: "Error", message: "Search failed: \(error.localizedDescription)")
-                return
+            if selectedSegmentIndex == 1 {
+                matchesAvailability = spot.isAvailable
+            } else if selectedSegmentIndex == 2 {
+                matchesAvailability = !spot.isAvailable
             }
 
-            guard let response = response, let item = response.mapItems.first else {
-                print("No search results found")
-                self.showAlert(title: "Error", message: "No search results found")
-                return
+            if let distance = spot.distanceFromCurrentLocation {
+                matchesDistance = distance <= maxDistance
             }
 
-            let coordinate = item.placemark.coordinate
-            let region = MKCoordinateRegion(center: coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
-            self.mapView.setRegion(region, animated: true)
-
-            let filteredSpots = self.parkingSpots.filter { spot in
-                let spotLocation = CLLocation(latitude: spot.latitude, longitude: spot.longitude)
-                return spotLocation.distance(from: CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)) <= 1000
-            }
-
-            self.addParkingSpots(filteredSpots)
-        }
-    }
-
-    func showDirections(to destination: MKAnnotation) {
-        guard let userLocation = userLocation else {
-            showAlert(title: "Error", message: "User location not available")
-            return
+            return matchesAvailability && matchesDistance
         }
 
-        let sourcePlacemark = MKPlacemark(coordinate: userLocation.coordinate)
-        let destinationPlacemark = MKPlacemark(coordinate: destination.coordinate)
-
-        let directionRequest = MKDirections.Request()
-        directionRequest.source = MKMapItem(placemark: sourcePlacemark)
-        directionRequest.destination = MKMapItem(placemark: destinationPlacemark)
-        directionRequest.transportType = .automobile
-
-        let directions = MKDirections(request: directionRequest)
-        directions.calculate { [weak self] (response, error) in
-            guard let self = self else { return }
-
-            if let error = error {
-                print("Error calculating directions: \(error.localizedDescription)")
-                self.showAlert(title: "Error", message: "Error calculating directions: \(error.localizedDescription)")
-                return
-            }
-
-            guard let response = response, let route = response.routes.first else {
-                self.showAlert(title: "Error", message: "No route found")
-                return
-            }
-
-            self.mapView.addOverlay(route.polyline, level: .aboveRoads)
-            let rect = route.polyline.boundingMapRect
-            self.mapView.setRegion(MKCoordinateRegion(rect), animated: true)
-        }
-    }
-
-    func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
-        if overlay is MKPolyline {
-            let polylineRenderer = MKPolylineRenderer(overlay: overlay)
-            polylineRenderer.strokeColor = .blue
-            polylineRenderer.lineWidth = 5.0
-            return polylineRenderer
-        }
-        return MKOverlayRenderer(overlay: overlay)
+        addParkingSpots(filteredParkingSpots)
     }
 }
