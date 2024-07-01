@@ -1,10 +1,3 @@
-//
-//  ViewController.swift
-//  parkfinder
-//
-//  Created by Rishabh Changwani on 6/26/24.
-//
-
 import UIKit
 import CoreLocation
 import MapKit
@@ -15,6 +8,7 @@ struct ParkingSpot: Codable {
     let longitude: Double
     let name: String
     let isAvailable: Bool
+    var distanceFromCurrentLocation: Double? // Update to var to modify
 }
 
 class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDelegate, UISearchBarDelegate, UITableViewDelegate, UITableViewDataSource, MKLocalSearchCompleterDelegate {
@@ -25,6 +19,8 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     @IBOutlet weak var tableView: UITableView!
     var parkingSpotDetailView: UIView!
     var parkingSpotNameLabel: UILabel!
+    var parkingSpotAvailabilityLabel: UILabel!
+    var parkingSpotDistanceLabel: UILabel!
     var directionsButton: UIButton!
     var closeButton: UIButton!
     var shareButton: UIButton!
@@ -40,16 +36,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        guard mapView != nil,
-              locationButtonPlaceholder != nil,
-              activityIndicator != nil,
-              searchBar != nil,
-              tableView != nil else {
-            print("One or more outlets are not connected")
-            return
-        }
-
+        
         // Set up location manager
         locationManager.delegate = self
         locationManager.requestWhenInUseAuthorization()
@@ -117,6 +104,14 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         parkingSpotNameLabel.font = UIFont.boldSystemFont(ofSize: 20)
         parkingSpotNameLabel.textColor = .black
 
+        parkingSpotAvailabilityLabel = UILabel() // New availability label
+        parkingSpotAvailabilityLabel.font = UIFont.systemFont(ofSize: 16)
+        parkingSpotAvailabilityLabel.textColor = .gray
+
+        parkingSpotDistanceLabel = UILabel() // New distance label
+        parkingSpotDistanceLabel.font = UIFont.systemFont(ofSize: 16)
+        parkingSpotDistanceLabel.textColor = .gray
+
         directionsButton = UIButton(type: .system)
         directionsButton.setTitle("Get Directions", for: .normal)
         directionsButton.addTarget(self, action: #selector(getDirections), for: .touchUpInside)
@@ -132,11 +127,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         shareButton.addTarget(self, action: #selector(shareLocation), for: .touchUpInside)
 
         parkingSpotDetailView.addSubview(parkingSpotNameLabel)
+        parkingSpotDetailView.addSubview(parkingSpotAvailabilityLabel) // Add availability label
+        parkingSpotDetailView.addSubview(parkingSpotDistanceLabel) // Add distance label
         parkingSpotDetailView.addSubview(directionsButton)
         parkingSpotDetailView.addSubview(closeButton)
         parkingSpotDetailView.addSubview(shareButton)
 
         parkingSpotNameLabel.translatesAutoresizingMaskIntoConstraints = false
+        parkingSpotAvailabilityLabel.translatesAutoresizingMaskIntoConstraints = false // Set up constraints for availability label
+        parkingSpotDistanceLabel.translatesAutoresizingMaskIntoConstraints = false // Set up constraints for distance label
         directionsButton.translatesAutoresizingMaskIntoConstraints = false
         closeButton.translatesAutoresizingMaskIntoConstraints = false
         shareButton.translatesAutoresizingMaskIntoConstraints = false
@@ -150,7 +149,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
             parkingSpotNameLabel.leadingAnchor.constraint(equalTo: parkingSpotDetailView.leadingAnchor, constant: 10),
             parkingSpotNameLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -10),
 
-            directionsButton.topAnchor.constraint(equalTo: parkingSpotNameLabel.bottomAnchor, constant: 10),
+            parkingSpotAvailabilityLabel.topAnchor.constraint(equalTo: parkingSpotNameLabel.bottomAnchor, constant: 5),
+            parkingSpotAvailabilityLabel.leadingAnchor.constraint(equalTo: parkingSpotDetailView.leadingAnchor, constant: 10),
+            parkingSpotAvailabilityLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -10),
+
+            parkingSpotDistanceLabel.topAnchor.constraint(equalTo: parkingSpotAvailabilityLabel.bottomAnchor, constant: 5),
+            parkingSpotDistanceLabel.leadingAnchor.constraint(equalTo: parkingSpotDetailView.leadingAnchor, constant: 10),
+            parkingSpotDistanceLabel.trailingAnchor.constraint(equalTo: closeButton.leadingAnchor, constant: -10),
+
+            directionsButton.topAnchor.constraint(equalTo: parkingSpotDistanceLabel.bottomAnchor, constant: 10),
             directionsButton.leadingAnchor.constraint(equalTo: parkingSpotDetailView.leadingAnchor, constant: 10),
             directionsButton.bottomAnchor.constraint(equalTo: parkingSpotDetailView.bottomAnchor, constant: -10),
 
@@ -197,6 +204,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
 
     func exitDirections() {
+        // Remove all route overlays from the map
         mapView.overlays.forEach { overlay in
             if overlay is MKPolyline {
                 mapView.removeOverlay(overlay)
@@ -215,6 +223,20 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 mapView.showsUserLocation = true
                 shouldUpdateMapRegion = false
             }
+
+            // Update distances for parking spots
+            updateParkingSpotDistances()
+        }
+    }
+
+    func updateParkingSpotDistances() {
+        guard let userLocation = userLocation else { return }
+
+        for i in 0..<parkingSpots.count {
+            let spotLocation = CLLocation(latitude: parkingSpots[i].latitude, longitude: parkingSpots[i].longitude)
+            let distanceInMeters = userLocation.distance(from: spotLocation)
+            let distanceInMiles = distanceInMeters / 1609.34 // Convert meters to miles
+            parkingSpots[i].distanceFromCurrentLocation = distanceInMiles
         }
     }
 
@@ -268,7 +290,15 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
     }
 
     func showParkingSpotDetail(for annotation: MKAnnotation) {
-        parkingSpotNameLabel.text = annotation.title ?? "Parking Spot"
+        guard let parkingSpot = parkingSpots.first(where: { $0.latitude == annotation.coordinate.latitude && $0.longitude == annotation.coordinate.longitude }) else { return }
+
+        parkingSpotNameLabel.text = parkingSpot.name
+        parkingSpotAvailabilityLabel.text = parkingSpot.isAvailable ? "Available" : "Not Available" // Set availability text
+        if let distance = parkingSpot.distanceFromCurrentLocation {
+            parkingSpotDistanceLabel.text = String(format: "Distance: %.2f miles", distance)
+        } else {
+            parkingSpotDistanceLabel.text = "Distance: N/A"
+        }
         parkingSpotDetailView.isHidden = false
     }
 
@@ -281,7 +311,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
         print("Starting to fetch parking spots...")
         activityIndicator.startAnimating()
         activityIndicator.isHidden = false
-        let urlString = "https://721e-216-115-73-252.ngrok-free.app/api/parkingSpots"
+        let urlString = "https://0300-216-115-73-252.ngrok-free.app/api/parkingSpots"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             showAlert(title: "Error", message: "Invalid URL")
@@ -320,6 +350,7 @@ class ViewController: UIViewController, CLLocationManagerDelegate, MKMapViewDele
                 self.parkingSpots = parkingSpots
                 DispatchQueue.main.async {
                     print("Fetched \(parkingSpots.count) parking spots")
+                    self.updateParkingSpotDistances() // Update distances after fetching
                     self.addParkingSpots(parkingSpots)
                     activityIndicator.stopAnimating()
                     activityIndicator.isHidden = true
