@@ -2,6 +2,7 @@ import UIKit
 import CoreLocation
 import MapKit
 import CoreLocationUI
+import Firebase
 
 class ViewController: UIViewController {
     @IBOutlet weak var mapView: MKMapView!
@@ -18,6 +19,7 @@ class ViewController: UIViewController {
     var shareButton: UIButton!
     var filterSegmentedControl: UISegmentedControl!
     var distanceSlider: UISlider!
+    var distanceLabel: UILabel!
 
     let locationManager = CLLocationManager()
     var shouldUpdateMapRegion = true
@@ -63,9 +65,6 @@ class ViewController: UIViewController {
 
         // Add Parking Spot Detail View
         setupParkingSpotDetailView()
-
-        // Add Segmented Control and Slider
-        setupFilters()
 
         // Fetch parking spots from backend
         fetchParkingSpots()
@@ -171,36 +170,6 @@ class ViewController: UIViewController {
         ])
     }
 
-    func setupFilters() {
-        // Set up Segmented Control
-        filterSegmentedControl = UISegmentedControl(items: ["All", "Available", "Not Available"])
-        filterSegmentedControl.selectedSegmentIndex = 0
-        filterSegmentedControl.addTarget(self, action: #selector(filterSegmentedControlChanged), for: .valueChanged)
-        view.addSubview(filterSegmentedControl)
-        filterSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
-
-        // Set up Slider
-        distanceSlider = UISlider()
-        distanceSlider.minimumValue = 0
-        distanceSlider.maximumValue = 10
-        distanceSlider.value = 10
-        distanceSlider.addTarget(self, action: #selector(distanceSliderChanged), for: .valueChanged)
-        view.addSubview(distanceSlider)
-        distanceSlider.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            filterSegmentedControl.topAnchor.constraint(equalTo: searchBar.bottomAnchor, constant: 10),
-            filterSegmentedControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            filterSegmentedControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-            filterSegmentedControl.heightAnchor.constraint(equalToConstant: 30),
-
-            distanceSlider.topAnchor.constraint(equalTo: filterSegmentedControl.bottomAnchor, constant: 10),
-            distanceSlider.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 10),
-            distanceSlider.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -10),
-            distanceSlider.heightAnchor.constraint(equalToConstant: 30)
-        ])
-    }
-
     @objc func locationButtonPressed() {
         if let location = userLocation {
             let region = MKCoordinateRegion(center: location.coordinate, latitudinalMeters: 1000, longitudinalMeters: 1000)
@@ -226,9 +195,9 @@ class ViewController: UIViewController {
     }
 
     @objc func getDirections() {
-        guard let selectedParkingSpot = selectedParkingSpot else { return }
-        showDirections(to: selectedParkingSpot)
-        isShowingDirections = true
+    guard let selectedParkingSpot = selectedParkingSpot else { return }
+    showDirections(to: selectedParkingSpot)
+    isShowingDirections = true
     }
 
     func exitDirections() {
@@ -252,6 +221,9 @@ class ViewController: UIViewController {
             parkingSpotDistanceLabel.text = "Distance: N/A"
         }
         parkingSpotDetailView.isHidden = false
+        
+        // Log the custom event
+        logParkingSpotSelectionEvent(spot: parkingSpot)
     }
 
     func fetchParkingSpots() {
@@ -263,7 +235,7 @@ class ViewController: UIViewController {
         print("Starting to fetch parking spots...")
         activityIndicator.startAnimating()
         activityIndicator.isHidden = false
-        let urlString = "https://0300-216-115-73-252.ngrok-free.app/api/parkingSpots"
+        let urlString = "https://f4d5-50-158-26-192.ngrok-free.app/api/parkingSpots"
         guard let url = URL(string: urlString) else {
             print("Invalid URL")
             showAlert(title: "Error", message: "Invalid URL")
@@ -336,35 +308,12 @@ class ViewController: UIViewController {
         present(alert, animated: true, completion: nil)
     }
 
-    @objc func filterSegmentedControlChanged() {
-        filterParkingSpots()
-    }
-
-    @objc func distanceSliderChanged() {
-        filterParkingSpots()
-    }
-
-    func filterParkingSpots() {
-        let selectedSegmentIndex = filterSegmentedControl.selectedSegmentIndex
-        let maxDistance = Double(distanceSlider.value)
-
-        filteredParkingSpots = parkingSpots.filter { spot in
-            var matchesAvailability = true
-            var matchesDistance = true
-
-            if selectedSegmentIndex == 1 {
-                matchesAvailability = spot.isAvailable
-            } else if selectedSegmentIndex == 2 {
-                matchesAvailability = !spot.isAvailable
-            }
-
-            if let distance = spot.distanceFromCurrentLocation {
-                matchesDistance = distance <= maxDistance
-            }
-
-            return matchesAvailability && matchesDistance
-        }
-
-        addParkingSpots(filteredParkingSpots)
+    func logParkingSpotSelectionEvent(spot: ParkingSpot) {
+        Analytics.logEvent("select_parking_spot", parameters: [
+            "name": spot.name,
+            "latitude": spot.latitude,
+            "longitude": spot.longitude,
+            "availability": spot.isAvailable ? "available" : "not_available"
+        ])
     }
 }

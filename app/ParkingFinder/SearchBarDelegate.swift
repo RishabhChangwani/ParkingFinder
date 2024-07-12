@@ -14,9 +14,15 @@ extension ViewController: UISearchBarDelegate, MKLocalSearchCompleterDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         if searchText.isEmpty {
             tableView.isHidden = true
+//            filterSegmentedControl.isHidden = true
+//            distanceSlider.isHidden = true
+//            distanceLabel.isHidden = true
             addParkingSpots(parkingSpots)
         } else {
             tableView.isHidden = false
+//            filterSegmentedControl.isHidden = false
+//            distanceSlider.isHidden = false
+//            distanceLabel.isHidden = false
             searchCompleter.queryFragment = searchText
         }
     }
@@ -24,6 +30,9 @@ extension ViewController: UISearchBarDelegate, MKLocalSearchCompleterDelegate {
     func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
         searchBar.resignFirstResponder()
         tableView.isHidden = true
+//        filterSegmentedControl.isHidden = false
+//        distanceSlider.isHidden = false
+//        distanceLabel.isHidden = false
     }
 
     // MKLocalSearchCompleterDelegate methods
